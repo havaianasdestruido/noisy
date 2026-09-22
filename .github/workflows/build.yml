@@ -1,0 +1,44 @@
+name: Build noisy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [x64, x86]
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build release executable
+        run: >-
+          msbuild noisy.sln
+          /t:Build
+          /p:Configuration=Release
+          /p:Platform=${{ matrix.platform }}
+          /m
+          /verbosity:minimal
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: noisy-${{ matrix.platform }}
+          path: noisy/bin/${{ matrix.platform }}/Release/noisy.exe
+          if-no-files-found: error
+          retention-days: 365
